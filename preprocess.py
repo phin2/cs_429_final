@@ -6,7 +6,7 @@ import matplotlib
 matplotlib.use('WebAgg')
 import matplotlib.pyplot as pyplot
 import matplotlib.lines as mlines
-
+import mido
 
 def open_midi(file):
     mf = midi.MidiFile()
@@ -106,8 +106,25 @@ def extract_chords(midi):
 #        print("Music Key: {0}".format(music_analysis))
 #        print("Key Confidence: {0}".format(music_analysis.correlationCoefficient))
 
+def get_time_sig(midi):
+    time_sig = midi.getTimeSignatures()[0]
+    return [time_sig.numerator, time_sig.denominator]
+
+def get_key_sig(midi):
+    key_sig = midi.analyze('key')
+    return [key_sig.sharps, 0 if key_sig.mode == 'minor' else 1]
+
+def get_bpm(mido):
+    tempo = 500000
+    for msg in mido:     # Search for tempo
+        if msg.type == 'set_tempo':
+            tempo = msg.tempo
+            break
+    tempo = (1 / tempo) * 60 * 1000000
+    return tempo
 
 midi_file = open_midi('./smallSet/September-1.mid')
-print(extract_chords(midi_file))
-
-
+mido_file = mido.MidiFile('./smallSet/September-1.mid')
+print("time signature: ", get_time_sig(midi_file))
+print("key signature: ", get_key_sig(midi_file))
+print("bpm:", get_bpm(mido_file))
