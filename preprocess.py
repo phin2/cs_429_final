@@ -6,6 +6,7 @@ import matplotlib
 matplotlib.use('WebAgg')
 import matplotlib.pyplot as pyplot
 import matplotlib.lines as mlines
+from mido import MidiFile
 
 
 def open_midi(file):
@@ -20,20 +21,11 @@ def open_midi(file):
 
 def list_instruments(midi):
     partStream = midi.parts.stream()
+    inst_arr = []
     for p in partStream:
-        print(p.partName)
+        inst_arr.append(p.partName)
 
-#time_sig = midi_file.getTimeSignatures()[0]
-#music_analysis = midi_file.analyze('key')
-
-#print("Time Signature: {0}/{1}".format(time_sig.beatCount,time_sig.denominator))
-#print("Music Key: {0}".format(music_analysis))
-#print("Key Confidence: {0}".format(music_analysis.correlationCoefficient))
-
-#temp_chords = midi_file.chordify()
-#temp_midi = stream.Score()
-#temp_midi.insert(0,temp_chords)
-
+    return inst_arr
     
 #counts the number of times each note appears in a measure
 def note_count(measure, count_dict):
@@ -64,7 +56,7 @@ def simplify_chord(roman_numeral):
 
     if inversion_name is not None:
         ret = ret + str(inversion_name)
-    elif roman_numeral.isDominantSeventh(): ret = ret + 'M7'
+    if roman_numeral.isDominantSeventh(): ret = ret + 'M7'
     elif roman_numeral.isDiminishedSeventh(): ret = ret + "o7"
     return ret
 
@@ -94,20 +86,44 @@ def extract_chords(midi):
 
     return ret
 
-#for root,dirs,files in os.walk('./smallSet'):
-#    for name in files:
-#        file_name = os.path.join(root,name)
-#        midi_file = open_midi(file_name)
-#        time_sig = midi_file.getTimeSignatures()[0]    
-#        music_analysis = midi_file.analyze('key')
-#
-#        print(name)
-#        print("Time Signature: {0}/{1}".format(time_sig.beatCount,time_sig.denominator))
-#        print("Music Key: {0}".format(music_analysis))
-#        print("Key Confidence: {0}".format(music_analysis.correlationCoefficient))
+feature_arr = []
+all_chords = []
+for root,dirs,files in os.walk('./smallSet'):
+    for name in files:
+        file_name = os.path.join(root,name)
+        midi_file = open_midi(file_name)
+        #song length in seconds
 
+        time_sig = midi_file.getTimeSignatures()[0]    
+        key_sig = midi_file.analyze('key')
 
-midi_file = open_midi('./smallSet/September-1.mid')
-print(extract_chords(midi_file))
+        chords = extract_chords(midi_file)
+        duration = MidiFile(file_name).length
+        num_measures = len(chords)
+        measure_duration = duration/num_measures
+        beat_duration = measure_duration/ time_sig.beatCount
 
+        bpm = round(60/beat_duration,2)
+        feature = [bpm, key_sig, chords,name]
+        feature_arr.append(feature)
+        all_chords += chords
+        print(name)
 
+new_chord = []
+feature_arr = np.array(feature_arr,dtype='object')
+for song in feature_arr:
+    song_dict = dict.fromkeys(set(all_chords),0)
+    print(song_dict)
+    for chord in song[2]:
+            song_dict[chord] += 1
+    
+    new_chord.append(list(song_dict.values()))
+
+chord_df = pd.DataFrame(columns =['chords'])
+for i in range(0,len(new_chord)):
+    chord_df.at[i,'chords'] = new_chord[i]
+
+df = pd.DataFrame(feature_arr,columns=['bpm','key_signature','chords','song_name'])
+df['chords'] = chord_df['chords']
+
+df.to_csv('inputs.csv')
