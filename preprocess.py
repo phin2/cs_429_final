@@ -7,7 +7,31 @@ matplotlib.use('WebAgg')
 import matplotlib.pyplot as pyplot
 import matplotlib.lines as mlines
 from mido import MidiFile
+import mido
 
+
+def get_time_sig(midi):
+    time_sig = midi.getTimeSignatures()[0]
+    return [time_sig.numerator, time_sig.denominator]
+
+def get_key_sig(midi):
+    key_sig = midi.analyze('key')
+    return [key_sig.sharps, 0 if key_sig.mode == 'minor' else 1]
+
+def get_bpm(mido):
+    tempo = 500000
+    for msg in mido:     # Search for tempo
+        if msg.type == 'set_tempo':
+            tempo = msg.tempo
+            break
+    tempo = (1 / tempo) * 60 * 1000000
+    return tempo
+
+midi_file = open_midi('./smallSet/September-1.mid')
+mido_file = mido.MidiFile('./smallSet/September-1.mid')
+print("time signature: ", get_time_sig(midi_file))
+print("key signature: ", get_key_sig(midi_file))
+print("bpm:", get_bpm(mido_file))
 
 def open_midi(file):
     mf = midi.MidiFile()
@@ -98,12 +122,7 @@ for root,dirs,files in os.walk('./smallSet'):
         key_sig = midi_file.analyze('key')
 
         chords = extract_chords(midi_file)
-        duration = MidiFile(file_name).length
-        num_measures = len(chords)
-        measure_duration = duration/num_measures
-        beat_duration = measure_duration/ time_sig.beatCount
-
-        bpm = round(60/beat_duration,2)
+        bpm = get_bpm(MidiFile(file_name))
         feature = [bpm, key_sig, chords,name]
         feature_arr.append(feature)
         all_chords += chords
