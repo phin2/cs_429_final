@@ -2,13 +2,8 @@ import numpy as np
 import pandas as pd
 import os
 from music21 import *
-import matplotlib
-matplotlib.use('WebAgg')
-import matplotlib.pyplot as pyplot
-import matplotlib.lines as mlines
 from mido import MidiFile
-import mido
-
+from tqdm import tqdm
 
 def get_time_sig(midi):
     time_sig = midi.getTimeSignatures()[0]
@@ -109,20 +104,29 @@ def get_features(dir):
     features = np.empty(shape=(0, 6))
     song_chords = []
     all_chords = np.array([])
+
+    print("extracting features...")
+
     for root,dirs,files in os.walk(dir):
-        for name in files:
+        for name in tqdm(files):
             file_name = os.path.join(root,name)
-            midi_file = open_midi(file_name)
+            try:
+                midi_file = open_midi(file_name)
+                mido_file = MidiFile(file_name)
+            except:
+                print("skipping", file_name)
+                continue
 
             time_sig = get_time_sig(midi_file)
             key_sig = get_key_sig(midi_file)
 
             chords = extract_chords(midi_file)
-            bpm = get_bpm(MidiFile(file_name))
+            bpm = get_bpm(mido_file)
             feature = np.concatenate(([bpm], time_sig, key_sig, [name]))
             features = np.append(features, [feature], axis=0)
             song_chords.append(chords)
             all_chords = np.unique(np.append(all_chords, chords))
+    
     
     chord_hist = get_chord_hist(song_chords, all_chords)
     features = np.insert(features, [1], chord_hist, axis=1)
@@ -131,7 +135,8 @@ def get_features(dir):
 
 def get_chord_hist(song_chords, all_chords):
     chord_hist = []
-    for chords in song_chords:
+    print("generating chord histogram...")
+    for chords in tqdm(song_chords):
         song_dict = dict.fromkeys(set(all_chords),0)
         for chord in chords:
                 song_dict[chord] += 1
@@ -142,4 +147,6 @@ dir_path = input("input directory: ")
 out_path = input("output file: ")
 
 df = pd.DataFrame(get_features(dir_path))
+print("writing to csv...")
 df.to_csv(out_path)
+print("done.")
