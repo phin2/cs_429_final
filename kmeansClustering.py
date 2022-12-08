@@ -111,6 +111,8 @@ for row in chords:
     chordArray = np.vstack((chordArray, array))
 
 data = np.append(data, chordArray,1)
+#for output file
+data = np.column_stack((data, labels))
 dataSize = data[:,0].size
 columns = []
 for i in range(data.shape[1]):
@@ -118,22 +120,25 @@ for i in range(data.shape[1]):
         columns.append('bpm')
     if i == 1:
         columns.append('keySig')
+    if i == (data.shape[1]-1):
+        columns.append('song_name')
+        continue
     if i > 1:
         columns.append('chord' + str(i))
 output = pd.DataFrame(data, columns=columns)
 output.to_csv('normalizedTestFile.csv')
 #time to make k means clustering algorithm
 numClusters = 3 #we'll have to test different values might depend on size of input
-clusters = np.random.random_sample(size=(data.shape[0],numClusters))
-clusterAssignments = []
-newClusterAssignments = np.random.randint(0,numClusters, size=data.shape[0])
-while  not np.array_equal(clusterAssignments,newClusterAssignments):
+# clusters = np.random.random_sample(size=(data.shape[0],numClusters))
+# clusterAssignments = []
+# newClusterAssignments = np.random.randint(0,numClusters, size=data.shape[0])
+# while  not np.array_equal(clusterAssignments,newClusterAssignments):
      
-    clusterAssignments = newClusterAssignments
-    clusters = createNewClusters(data, clusterAssignments, numClusters)
-    newClusterAssignments = assignClusters(data, clusters)
-    print(newClusterAssignments)
-    print(clusters)
-printResult( clusterAssignments, labels)
+#     clusterAssignments = newClusterAssignments
+#     clusters = createNewClusters(data, clusterAssignments, numClusters)
+#     newClusterAssignments = assignClusters(data, clusters)
+#     print(newClusterAssignments)
+#     print(clusters)
+# printResult( clusterAssignments, labels)
     
     
