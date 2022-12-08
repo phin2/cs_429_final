@@ -106,7 +106,7 @@ def extract_chords(midi_file):
 
 def get_features(dir):
 
-    features = np.array([])
+    features = np.empty(shape=(0, 6))
     song_chords = []
     all_chords = np.array([])
     for root,dirs,files in os.walk(dir):
@@ -120,8 +120,7 @@ def get_features(dir):
             chords = extract_chords(midi_file)
             bpm = get_bpm(MidiFile(file_name))
             feature = np.concatenate(([bpm], time_sig, key_sig, [name]))
-            features = np.append(features, [feature])
-            print(features)
+            features = np.append(features, [feature], axis=0)
             song_chords.append(chords)
             all_chords = np.unique(np.append(all_chords, chords))
     
@@ -139,4 +138,8 @@ def get_chord_hist(song_chords, all_chords):
         chord_hist.append(list(song_dict.values()))
     return np.array(chord_hist)
 
-print(get_features('./test'))
+dir_path = input("input directory: ")
+out_path = input("output file: ")
+
+df = pd.DataFrame(get_features(dir_path))
+df.to_csv(out_path)
