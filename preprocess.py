@@ -12,11 +12,11 @@ import mido
 
 def get_time_sig(midi):
     time_sig = midi.getTimeSignatures()[0]
-    return [time_sig.numerator, time_sig.denominator]
+    return np.array([time_sig.numerator, time_sig.denominator])
 
 def get_key_sig(midi):
     key_sig = midi.analyze('key')
-    return [key_sig.sharps, 0 if key_sig.mode == 'minor' else 1]
+    return np.array([key_sig.sharps, 0 if key_sig.mode == 'minor' else 1])
 
 def get_bpm(mido):
     tempo = 500000
@@ -26,12 +26,6 @@ def get_bpm(mido):
             break
     tempo = (1 / tempo) * 60 * 1000000
     return tempo
-
-midi_file = open_midi('./smallSet/September-1.mid')
-mido_file = mido.MidiFile('./smallSet/September-1.mid')
-print("time signature: ", get_time_sig(midi_file))
-print("key signature: ", get_key_sig(midi_file))
-print("bpm:", get_bpm(mido_file))
 
 def open_midi(file):
     mf = midi.MidiFile()
@@ -84,7 +78,7 @@ def simplify_chord(roman_numeral):
     elif roman_numeral.isDiminishedSeventh(): ret = ret + "o7"
     return ret
 
-def extract_chords(midi):
+def extract_chords(midi_file):
     ret = []
     temp_midi = stream.Score()
     temp_chords = midi_file.chordify()
@@ -108,41 +102,41 @@ def extract_chords(midi):
         roman_numeral = roman.romanNumeralFromChord(measure_chord,music_key)
         ret.append(simplify_chord(roman_numeral))
 
-    return ret
+    return np.array(ret)
 
-feature_arr = []
-all_chords = []
-for root,dirs,files in os.walk('./smallSet'):
-    for name in files:
-        file_name = os.path.join(root,name)
-        midi_file = open_midi(file_name)
-        #song length in seconds
+def get_features(dir):
 
-        time_sig = midi_file.getTimeSignatures()[0]    
-        key_sig = midi_file.analyze('key')
+    features = np.array([])
+    song_chords = []
+    all_chords = np.array([])
+    for root,dirs,files in os.walk(dir):
+        for name in files:
+            file_name = os.path.join(root,name)
+            midi_file = open_midi(file_name)
 
-        chords = extract_chords(midi_file)
-        bpm = get_bpm(MidiFile(file_name))
-        feature = [bpm, key_sig, chords,name]
-        feature_arr.append(feature)
-        all_chords += chords
-        print(name)
+            time_sig = get_time_sig(midi_file)
+            key_sig = get_key_sig(midi_file)
 
-new_chord = []
-feature_arr = np.array(feature_arr,dtype='object')
-for song in feature_arr:
-    song_dict = dict.fromkeys(set(all_chords),0)
-    print(song_dict)
-    for chord in song[2]:
-            song_dict[chord] += 1
+            chords = extract_chords(midi_file)
+            bpm = get_bpm(MidiFile(file_name))
+            feature = np.concatenate(([bpm], time_sig, key_sig, [name]))
+            features = np.append(features, [feature])
+            print(features)
+            song_chords.append(chords)
+            all_chords = np.unique(np.append(all_chords, chords))
     
-    new_chord.append(list(song_dict.values()))
+    chord_hist = get_chord_hist(song_chords, all_chords)
+    features = np.insert(features, [1], chord_hist, axis=1)
 
-chord_df = pd.DataFrame(columns =['chords'])
-for i in range(0,len(new_chord)):
-    chord_df.at[i,'chords'] = new_chord[i]
+    return features
 
-df = pd.DataFrame(feature_arr,columns=['bpm','key_signature','chords','song_name'])
-df['chords'] = chord_df['chords']
+def get_chord_hist(song_chords, all_chords):
+    chord_hist = []
+    for chords in song_chords:
+        song_dict = dict.fromkeys(set(all_chords),0)
+        for chord in chords:
+                song_dict[chord] += 1
+        chord_hist.append(list(song_dict.values()))
+    return np.array(chord_hist)
 
-df.to_csv('inputs.csv')
+print(get_features('./test'))
