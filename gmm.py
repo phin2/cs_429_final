@@ -1,4 +1,4 @@
-from sklearn import cluster
+from sklearn import mixture
 import numpy as np
 import pandas as pd
 
@@ -14,9 +14,7 @@ rows = data.shape[0]
 cols = data.shape[1]
 
 n_clusters = int(input("n of clusters: "))
-sc = cluster.SpectralClustering(n_clusters=n_clusters).fit(data)
-labels = sc.labels_
+gmm = mixture.BayesianGaussianMixture(n_components=n_clusters).fit(data)
+labels = gmm.predict_proba(data)
 
-for i in range(n_clusters):
-    print("cluster", i)
-    print(songs[labels==i])
+print(labels)

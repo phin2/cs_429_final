@@ -114,7 +114,6 @@ def get_features(dir):
                 midi_file = open_midi(file_name)
                 mido_file = MidiFile(file_name)
             except:
-                print("skipping", file_name)
                 continue
 
             time_sig = get_time_sig(midi_file)
