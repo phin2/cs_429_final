@@ -8,6 +8,8 @@ import matplotlib.pyplot as pyplot
 import matplotlib.lines as mlines
 from mido import MidiFile
 import mido
+import time
+start_time =time.time()
 
 
 def get_time_sig(midi):
@@ -26,12 +28,6 @@ def get_bpm(mido):
             break
     tempo = (1 / tempo) * 60 * 1000000
     return tempo
-
-midi_file = open_midi('./smallSet/September-1.mid')
-mido_file = mido.MidiFile('./smallSet/September-1.mid')
-print("time signature: ", get_time_sig(midi_file))
-print("key signature: ", get_key_sig(midi_file))
-print("bpm:", get_bpm(mido_file))
 
 def open_midi(file):
     mf = midi.MidiFile()
@@ -87,7 +83,7 @@ def simplify_chord(roman_numeral):
 def extract_chords(midi):
     ret = []
     temp_midi = stream.Score()
-    temp_chords = midi_file.chordify()
+    temp_chords = midi.chordify()
     temp_midi.insert(0,temp_chords)
     music_key = temp_midi.analyze('key')
     max_notes_per_chord = 4
@@ -110,29 +106,95 @@ def extract_chords(midi):
 
     return ret
 
+
+def extract_melody(measure):
+    melody = []
+    for chord in measure.recurse().getElementsByClass('Chord'):
+        melody.append(chord.pitches[len(chord.pitches) - 1])
+
+    return melody
+
+
+def melodic_motion(midi):
+    melody = []
+    motion = []
+    temp_chords = midi.chordify()
+    
+    for m in temp_chords.measures(0,None):
+        if type(m) != stream.Measure:
+            continue
+        melody += extract_melody(m)
+
+    window_len = 4
+    prev = 0
+    for i in range(0,len(melody) - window_len):
+        if melody[i] < melody[i + window_len]:
+            if prev + 1 > 1: prev = 0
+            motion.append(prev + 1)
+            prev = motion[i]
+        elif melody[i] > melody[i + window_len]:
+            if prev - 1 < -1: prev = 0
+            motion.append(prev - 1)
+            prev = motion[i]
+        else:
+            motion.append(prev) 
+
+    return motion
+#def motion(measure):
+#    melody = []
+#    for chord in measure.recurse().getElementsByClass('Chord'):
+#        melody.append(chord.pitches[len(chord.pitches) - 1])
+#    print("_________________-")
+#
+#    if not melody:
+#        return 0
+#    elif melody[0] > melody[len(melody) -1]:
+#        return -1
+#    elif melody[0] < melody[len(melody) - 1]:
+#        return 1
+#    else:
+#        return 0
+#
+#
+#def melodic_motion(midi):
+#    ret = []
+#    temp_chords = midi.chordify()
+#    
+#    for m in temp_chords.measures(0,None):
+#        if type(m) != stream.Measure:
+#            continue
+#        ret.append(motion(m))
+#
+#    return ret
+#
+#def extract_melodic_motion(midi):
 feature_arr = []
 all_chords = []
-for root,dirs,files in os.walk('./smallSet'):
+for root,dirs,files in os.walk('./largeSet'):
     for name in files:
-        file_name = os.path.join(root,name)
-        midi_file = open_midi(file_name)
-        #song length in seconds
+        try:
+            file_name = os.path.join(root,name)
+            midi_file = open_midi(file_name)
+            #song length in seconds
 
-        time_sig = midi_file.getTimeSignatures()[0]    
-        key_sig = midi_file.analyze('key')
+            time_sig = midi_file.getTimeSignatures()[0]    
+            key_sig = midi_file.analyze('key')
 
-        chords = extract_chords(midi_file)
-        bpm = get_bpm(MidiFile(file_name))
-        feature = [bpm, key_sig, chords,name]
-        feature_arr.append(feature)
-        all_chords += chords
-        print(name)
+            motion = melodic_motion(midi_file)
+            chords = extract_chords(midi_file)
+            bpm = get_bpm(MidiFile(file_name))
+            feature = [bpm, key_sig, chords,motion,name]
+            feature_arr.append(feature)
+            all_chords += chords
+            print(name)
+        except Exception:
+            print("Error song: ",name," could not be read")
 
 new_chord = []
 feature_arr = np.array(feature_arr,dtype='object')
+
 for song in feature_arr:
     song_dict = dict.fromkeys(set(all_chords),0)
-    print(song_dict)
     for chord in song[2]:
             song_dict[chord] += 1
     
@@ -142,7 +204,8 @@ chord_df = pd.DataFrame(columns =['chords'])
 for i in range(0,len(new_chord)):
     chord_df.at[i,'chords'] = new_chord[i]
 
-df = pd.DataFrame(feature_arr,columns=['bpm','key_signature','chords','song_name'])
+df = pd.DataFrame(feature_arr,columns=['bpm','key_signature','chords',"melodic_motion",'song_name'])
 df['chords'] = chord_df['chords']
 
-df.to_csv('inputs.csv')
+df.to_csv('song_features_large.csv')
+print(time.time() -  start_time)

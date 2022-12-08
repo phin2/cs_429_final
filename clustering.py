@@ -5,30 +5,44 @@ import matplotlib
 matplotlib.use("WebAgg")
 import matplotlib.pyplot as plt
 from networkx.algorithms.community.label_propagation import label_propagation_communities
+import random
+df = pd.read_csv('inputs_test.csv')
+import math
 
 
-df = pd.read_csv('inputs.csv')
+color_mem = {}
+def gen_color(number,mem):
+    if not number in mem:
+        r = random.random()
+        g = random.random()
+        b = random.random()
+        mem[number] = (r,g,b,1.0)
+    return mem[number]
+
+def to_list(string):
+    l = string.replace('[',"")
+    l = l.replace(']',"")
+    l = l.replace( ' ',"")
+
+    l = l.split(",")
+    l = np.asarray([int(i) for i in l])
+
+    return l
+
+def motion_sim(m1,m2):
+    return 0
 
 #calculates similarity for two songs bpm
 def bpm_sim(bpm1,bpm2):
     return 1 - abs(bpm1 - bpm2)/(bpm1 + bpm2)
 
-def chord_sim(c1,c2):
-    c1 = c1.replace('[',"")
-    c1 = c1.replace(']',"")
-    c1 = c1.replace(' ',"")
-    
-    c2 = c2.replace('[',"")
-    c2 = c2.replace(']',"")
-    c2 = c2.replace(' ',"")
+def cos_sim(c1,c2):
+    if type(c1) == str:
+        c1 = to_list(c1)
+    if type(c2) == str:
+        c2 = to_list(c2)
 
-    c1 = c1.split(",")
-    c2 = c2.split(",")
-
-    c1 = np.asarray([int(i) for i in c1])
-    c2 = np.asarray([int(i) for i in c2])
-
-    return np.dot(c1,c2)/(np.multiply(np.linalg.norm(c1),np.linalg.norm(c2)))
+    return np.abs(np.dot(c1,c2)/(np.multiply(np.linalg.norm(c1),np.linalg.norm(c2))))
 
 #calculates similarity of bpm between all songs in a dataset
 def bpm_all(data):
@@ -41,29 +55,35 @@ def bpm_all(data):
 def chord_all(data):
     chords = data['chords'].to_numpy()
 
-    chord_vec = np.vectorize(chord_sim)
+    chord_vec = np.vectorize(cos_sim)
     chord_score = np.zeros((len(chords),len(chords)))
     chord_score = chord_vec(chords[:,None],chords[None,:])
-    print(chord_score)
     return chord_score
 
-def bpm_graph(data,sim_scores):
-    G = nx.Graph()
-    threshold = 0.99
+def motion_all(data):
+    motions = data['melodic_motion'].to_numpy()
     
-    for index,song in data.iterrows():
-        G.add_node(song['song_name'])
-        edges = np.where(sim_scores[index] > threshold)
-        for e in edges[0]:
-            if e != index:
-                G.add_edge(song['song_name'],data['song_name'][e])
+    max_len = 0
+    for i in range(0,len(motions)):
+        motions[i] = to_list(motions[i])                                                
+    
+    for m in motions:
+        if len(m) > max_len:
+            max_len = len(m)
 
-    communities = label_propagation_communities(G)
-    return G, communities
+    for i in range(0,len(motions)):
+        motions[i] =  np.concatenate((motions[i],np.zeros(max_len - len(motions[i]))))
 
-def chord_graph(data,sim_scores):
+    motions_vec = np.vectorize(cos_sim)
+    motion_score = np.zeros((max_len,max_len))
+    motion_score = motions_vec(motions[:,None],motions[None,:])
+    #print(motion_score)
+    return motion_score
+
+    
+
+def graph(data,sim_scores,threshold):
     G = nx.Graph()
-    threshold = 0.50
 
     for index,song in data.iterrows():
         G.add_node(song['song_name'])
@@ -75,16 +95,59 @@ def chord_graph(data,sim_scores):
     communities = label_propagation_communities(G)
     return G,communities
 
+def all_graph(data,bpm_scores,c_scores,m_scores):
+    return 0
+
 bpm_scores = bpm_all(df)
 chord_scores = chord_all(df)
+motion_scores = motion_all(df)
 
-G_bpm,bpm_communities = bpm_graph(df,bpm_scores)
-G_chord,chord_communities = chord_graph(df,chord_scores)
+G_bpm,bpm_communities = graph(df,bpm_scores,0.94)
+G_chord,chord_communities = graph(df,chord_scores,0.55)
+G_motion, motion_communities = graph(df,motion_scores,0.1)
+
+#color_map_bpm = np.zeros(len())
+color_map_bpm = np.zeros(len(G_bpm.nodes))
+for i in bpm_communities:
+    for j in i:
+        #print(j)
+        #print(list(G_bpm.nodes).index(j))
+        color_map_bpm[list(G_bpm.nodes).index(j)] = list(bpm_communities).index(i)
+
+color_map_chord = np.zeros(len(G_bpm.nodes))
+for i in chord_communities:
+    for j in i:
+        #print(j)
+        #print(list(G_bpm.nodes).index(j))
+        color_map_chord[list(G_chord.nodes).index(j)] = list(chord_communities).index(i)
+
+color_map_motion = np.zeros(len(G_bpm.nodes))
+for i in motion_communities:
+    for j in i:
+        #print(j)
+        #print(list(G_bpm.nodes).index(j))
+        color_map_motion[list(G_motion.nodes).index(j)] = list(motion_communities).index(i)
+
+print('BPM Communities:')
+for i in bpm_communities:
+    print(i)
+print("------------------------------------------------------------------------------")
+print('Chord Communities:')
+for i in chord_communities:
+    print(i)
+print("------------------------------------------------------------------------------")
+print('Motion Communities:')
+for i in motion_communities:
+    print(i)
+
+
 
 
 plt.figure("Chords")
-nx.draw(G_chord,with_labels=True,font_size=7)
+nx.draw(G_chord,with_labels=True,node_color = color_map_chord,font_size=7)
 plt.figure("Bpm")
-nx.draw(G_bpm,with_labels=True,font_size=7)
+nx.draw(G_bpm,with_labels=True,node_color = color_map_bpm,font_size=7)
+plt.figure("Motion")
+nx.draw(G_motion,with_labels=True,node_color = color_map_motion,font_size=7)
 
 plt.show()
