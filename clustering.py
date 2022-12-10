@@ -6,18 +6,12 @@ matplotlib.use("WebAgg")
 import matplotlib.pyplot as plt
 from networkx.algorithms.community.label_propagation import label_propagation_communities
 import random
-df = pd.read_csv('inputs_test.csv')
 import math
 
+df = pd.read_csv('inputs_test.csv')
 
-color_mem = {}
-def gen_color(number,mem):
-    if not number in mem:
-        r = random.random()
-        g = random.random()
-        b = random.random()
-        mem[number] = (r,g,b,1.0)
-    return mem[number]
+
+
 
 def to_list(string):
     l = string.replace('[',"")
@@ -80,7 +74,6 @@ def motion_all(data):
     #print(motion_score)
     return motion_score
 
-    
 
 def graph(data,sim_scores,threshold):
     G = nx.Graph()
@@ -95,14 +88,12 @@ def graph(data,sim_scores,threshold):
     communities = label_propagation_communities(G)
     return G,communities
 
-def all_graph(data,bpm_scores,c_scores,m_scores):
-    return 0
 
 bpm_scores = bpm_all(df)
 chord_scores = chord_all(df)
 motion_scores = motion_all(df)
 
-G_bpm,bpm_communities = graph(df,bpm_scores,0.94)
+G_bpm,bpm_communities = graph(df,bpm_scores,0.999)
 G_chord,chord_communities = graph(df,chord_scores,0.55)
 G_motion, motion_communities = graph(df,motion_scores,0.1)
 
@@ -141,13 +132,16 @@ for i in motion_communities:
     print(i)
 
 
-
+pos_bpm = nx.spring_layout(G_bpm,k=5/math.sqrt(G_bpm.order()))
+pos_chord = nx.spring_layout(G_chord,k=5/math.sqrt(G_chord.order()))
+pos_motion = nx.spring_layout(G_motion,k=5/math.sqrt(G_motion.order()))
 
 plt.figure("Chords")
-nx.draw(G_chord,with_labels=True,node_color = color_map_chord,font_size=7)
+nx.draw(G_chord,pos_chord,with_labels=True,node_color = color_map_chord,font_size=7)
 plt.figure("Bpm")
-nx.draw(G_bpm,with_labels=True,node_color = color_map_bpm,font_size=7)
+nx.draw(G_bpm,pos_bpm,with_labels=True,node_color = color_map_bpm,font_size=7)
 plt.figure("Motion")
-nx.draw(G_motion,with_labels=True,node_color = color_map_motion,font_size=7)
+nx.draw(G_motion,pos_motion,with_labels=True,node_color = color_map_motion,font_size=7)
+
 
 plt.show()

@@ -10,7 +10,7 @@ from mido import MidiFile
 import mido
 import time
 start_time =time.time()
-
+from multiprocessing import Pool
 
 def get_time_sig(midi):
     time_sig = midi.getTimeSignatures()[0]
@@ -106,14 +106,12 @@ def extract_chords(midi):
 
     return ret
 
-
 def extract_melody(measure):
     melody = []
     for chord in measure.recurse().getElementsByClass('Chord'):
         melody.append(chord.pitches[len(chord.pitches) - 1])
 
     return melody
-
 
 def melodic_motion(midi):
     melody = []
@@ -140,37 +138,12 @@ def melodic_motion(midi):
             motion.append(prev) 
 
     return motion
-#def motion(measure):
-#    melody = []
-#    for chord in measure.recurse().getElementsByClass('Chord'):
-#        melody.append(chord.pitches[len(chord.pitches) - 1])
-#    print("_________________-")
-#
-#    if not melody:
-#        return 0
-#    elif melody[0] > melody[len(melody) -1]:
-#        return -1
-#    elif melody[0] < melody[len(melody) - 1]:
-#        return 1
-#    else:
-#        return 0
-#
-#
-#def melodic_motion(midi):
-#    ret = []
-#    temp_chords = midi.chordify()
-#    
-#    for m in temp_chords.measures(0,None):
-#        if type(m) != stream.Measure:
-#            continue
-#        ret.append(motion(m))
-#
-#    return ret
-#
-#def extract_melodic_motion(midi):
+
+def process(folder):
+
 feature_arr = []
 all_chords = []
-for root,dirs,files in os.walk('./largeSet'):
+for root,dirs,files in os.walk('./smallSet'):
     for name in files:
         try:
             file_name = os.path.join(root,name)
@@ -190,22 +163,23 @@ for root,dirs,files in os.walk('./largeSet'):
         except Exception:
             print("Error song: ",name," could not be read")
 
-new_chord = []
+#new_chord = []
 feature_arr = np.array(feature_arr,dtype='object')
 
-for song in feature_arr:
-    song_dict = dict.fromkeys(set(all_chords),0)
-    for chord in song[2]:
-            song_dict[chord] += 1
-    
-    new_chord.append(list(song_dict.values()))
-
-chord_df = pd.DataFrame(columns =['chords'])
-for i in range(0,len(new_chord)):
-    chord_df.at[i,'chords'] = new_chord[i]
+#for song in feature_arr:
+#    song_dict = dict.fromkeys(set(all_chords),0)
+#    for chord in song[2]:
+#            song_dict[chord] += 1
+#    
+#    new_chord.append(list(song_dict.values()))
+#
+#chord_df = pd.DataFrame(columns =['chords'])
+#
+#for i in range(0,len(new_chord)):
+#    chord_df.at[i,'chords'] = new_chord[i]
 
 df = pd.DataFrame(feature_arr,columns=['bpm','key_signature','chords',"melodic_motion",'song_name'])
-df['chords'] = chord_df['chords']
+#df['chords'] = chord_df['chords']
 
-df.to_csv('song_features_large.csv')
+df.to_csv('song_features_test_inv.csv')
 print(time.time() -  start_time)
