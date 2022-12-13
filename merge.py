@@ -2,6 +2,7 @@ import pandas as pd
 import os
 
 dfs = []
+#Merges the output files from threading process into one file
 for root,dirs,file in os.walk('./feature_files'):
     for name in file:
         dfs.append(pd.read_csv(os.path.join(root,name)))
