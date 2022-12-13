@@ -1,2 +1,30 @@
-assumptions:
-- chord order does not matter
+Preprocessing Order:
+  - threading_preprocessing.py
+  - merge.py
+  - convert_chords.py
+  - kmeans_prep.py
+
+threading_preprocessing.py:
+  - extracts features from midi files such as bpm, key signature, song name, and chords in song
+  - stores each song as an individual csv in temp folder
+  - threading_preprocessing is buggy as to handle the large dataset
+  - once songs are no longer printed to the terminal kill terminal and run merge.py
+
+merge.py:
+  - merges all the csv's in the temp folder into one csv file that contains all songs
+
+convert_chords.py:
+  - converts chord column of the csv into a chord histogram which contains the frequencies that each chord appears
+
+kmeans_prep.py:
+  - normalizes the data and performs dimensionality reduction
+  - performs both T-SNE and PCA dimensionality reduction down to 2 dimensions
+  - creates two text files song_data_tsne.txt, and song_data_pca.txt
+
+kmeans.py:
+  - performs kmeans algorithm on the dataset for n columns
+  - takes two command line arguments, number of epochs, and file_name
+  - to run kmeans on song_data_tsne.txt with 1000 epochs
+  - python3 kmeans.py 1000 song_data_tsne.txt
+  - prints out cluster results into results.txt file for validation
+

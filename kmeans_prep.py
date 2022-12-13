@@ -24,7 +24,7 @@ data_pca = pca.transform(data)
 data_pca = pd.DataFrame(data_pca,columns=['X','Y'])
 
 data_arr = data_pca.to_numpy()
-np.savetxt('song_data.txt',data_arr)
+np.savetxt('song_data_pca.txt',data_arr)
 
 tsne = TSNE(n_components=2,verbose=1,perplexity=40,n_iter=300)
 tsne.fit(data)

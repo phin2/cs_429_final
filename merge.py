@@ -2,7 +2,7 @@ import pandas as pd
 import os
 
 dfs = []
-for root,dirs,file in os.walk('./feature_files'):
+for root,dirs,file in os.walk('./temp'):
     for name in file:
         dfs.append(pd.read_csv(os.path.join(root,name)))
 

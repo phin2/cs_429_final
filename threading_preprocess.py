@@ -43,14 +43,6 @@ def open_midi(file):
 
     return midi.translate.midiFileToStream(mf)
 
-def list_instruments(midi):
-    partStream = midi.parts.stream()
-    inst_arr = []
-    for p in partStream:
-        inst_arr.append(p.partName)
-
-    return inst_arr
-    
 #counts the number of times each note appears in a measure
 def note_count(measure, count_dict):
 
@@ -109,39 +101,6 @@ def extract_chords(midi):
         ret.append(simplify_chord(roman_numeral))
 
     return ret
-
-def extract_melody(measure):
-    melody = []
-    for chord in measure.recurse().getElementsByClass('Chord'):
-        melody.append(chord.pitches[len(chord.pitches) - 1])
-
-    return melody
-
-def melodic_motion(midi):
-    melody = []
-    motion = []
-    temp_chords = midi.chordify()
-    
-    for m in temp_chords.measures(0,None):
-        if type(m) != stream.Measure:
-            continue
-        melody += extract_melody(m)
-
-    window_len = 4
-    prev = 0
-    for i in range(0,len(melody) - window_len):
-        if melody[i] < melody[i + window_len]:
-            if prev + 1 > 1: prev = 0
-            motion.append(prev + 1)
-            prev = motion[i]
-        elif melody[i] > melody[i + window_len]:
-            if prev - 1 < -1: prev = 0
-            motion.append(prev - 1)
-            prev = motion[i]
-        else:
-            motion.append(prev) 
-
-    return motion
 
 folder = './largeSet'
 def process(file_name):

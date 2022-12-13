@@ -6,6 +6,7 @@ import pandas as pd
 import warnings
 import math
 import sys
+import os
 warnings.filterwarnings("ignore")
 
 names = pd.read_csv('song_features_chord_hist.csv')['song_name'].to_numpy()
@@ -95,6 +96,7 @@ for NUM_CENTROIDS in NUM_CENTROIDS_ARR:
     plt.scatter(X,Y,c = assignments)
     plt.scatter(c_x,c_y,c='r',marker = 'x')
     for i in range(0,NUM_CENTROIDS):
+        os.remove('./results.txt')
         file = open("results.txt",'a')
         file.write('\n')
         file.write("-------------------------------------------------")
