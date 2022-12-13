@@ -15,15 +15,17 @@ from multiprocessing import set_start_method
 import warnings
 warnings.filterwarnings("ignore")
 
-
+# extracts time signature from midi file
 def get_time_sig(midi):
     time_sig = midi.getTimeSignatures()[0]
     return [time_sig.numerator, time_sig.denominator]
 
+# extracts key signature from midi file
 def get_key_sig(midi):
     key_sig = midi.analyze('key')
     return [key_sig.sharps, 0 if key_sig.mode == 'minor' else 1]
 
+# extracts bpm from midi file
 def get_bpm(mido):
     tempo = 500000
     for msg in mido:     # Search for tempo
@@ -33,6 +35,7 @@ def get_bpm(mido):
     tempo = (1 / tempo) * 60 * 1000000
     return tempo
 
+# open midi file for analysis using music21
 def open_midi(file):
     mf = midi.MidiFile()
     mf.open(file)
@@ -43,6 +46,7 @@ def open_midi(file):
 
     return midi.translate.midiFileToStream(mf)
 
+# (unused) extracts all instruments used in midi file
 def list_instruments(midi):
     partStream = midi.parts.stream()
     inst_arr = []
@@ -84,6 +88,7 @@ def simplify_chord(roman_numeral):
     elif roman_numeral.isDiminishedSeventh(): ret = ret + "o7"
     return ret
 
+# extracts an array of chords from midi file
 def extract_chords(midi):
     ret = []
     temp_midi = stream.Score()
@@ -110,6 +115,7 @@ def extract_chords(midi):
 
     return ret
 
+# (unused) attempt to extract a melody from a midi file
 def extract_melody(measure):
     melody = []
     for chord in measure.recurse().getElementsByClass('Chord'):
@@ -117,6 +123,7 @@ def extract_melody(measure):
 
     return melody
 
+# (unused) another attempt to extract a melody from a midi file
 def melodic_motion(midi):
     melody = []
     motion = []
@@ -144,6 +151,7 @@ def melodic_motion(midi):
     return motion
 
 folder = './largeSet'
+# given a midi file extracts the feature vector and writes to a csv
 def process(file_name):
     feature_arr = []
     all_chords = []
@@ -167,15 +175,16 @@ def process(file_name):
     except Exception as e:
         print('Error:', e)
 
-
+# main function for the program
 def main():
-    pool = Pool(8)
+    pool = Pool(8) # sets up multiprocessing to run faster
     file_names = [file for root,dirs,file in os.walk(folder)][0]
     file_names = [folder + '/' + s for s in file_names]
-    pool.map(process,file_names)
+    pool.map(process,file_names) # run preprocess on all midi files
     pool.close()
     pool.join()
 
+# if statement protects against recursively creating threads
 if __name__ == '__main__':
     main()
     print(time.time() -  start_time)
