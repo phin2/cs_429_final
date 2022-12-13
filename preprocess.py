@@ -113,15 +113,17 @@ def get_features(dir):
             try:
                 midi_file = open_midi(file_name)
                 mido_file = MidiFile(file_name)
+
+                time_sig = get_time_sig(midi_file)
+                key_sig = get_key_sig(midi_file)
+
+                chords = extract_chords(midi_file)
+                bpm = get_bpm(mido_file)
+                feature = np.concatenate(([bpm], time_sig, key_sig, [name]))
+
             except:
                 continue
 
-            time_sig = get_time_sig(midi_file)
-            key_sig = get_key_sig(midi_file)
-
-            chords = extract_chords(midi_file)
-            bpm = get_bpm(mido_file)
-            feature = np.concatenate(([bpm], time_sig, key_sig, [name]))
             features = np.append(features, [feature], axis=0)
             song_chords.append(chords)
             all_chords = np.unique(np.append(all_chords, chords))
