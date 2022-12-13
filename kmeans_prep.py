@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import random
 import math
 
+#inputs data from input file below
 data = pd.read_csv('./song_features_chord_hist.csv')
 labels = data['song_name']
 data = data.iloc[:,1:len(data.axes(1)) - 2]
@@ -18,19 +19,22 @@ scaler = preprocessing.MinMaxScaler()
 x_scaled = scaler.fit_transform(x)
 data =  pd.DataFrame(x_scaled)
 
+# runs PCA on data set which converts it to two components
 pca = PCA(n_components = 2)
 pca.fit (data)
 data_pca = pca.transform(data)
 data_pca = pd.DataFrame(data_pca,columns=['X','Y'])
-
+#saves PCA data to song_data.txt
 data_arr = data_pca.to_numpy()
 np.savetxt('song_data_pca.txt',data_arr)
 
+#Runs TSNE  on data set which also converts it to two components
 tsne = TSNE(n_components=2,verbose=1,perplexity=40,n_iter=300)
 tsne.fit(data)
 data_tsne = tsne.fit_transform(data)
 data_tsne = pd.DataFrame(data_tsne,columns=['X','Y'])
 
+#Saves TSNE data to song_data_tsne.txt
 data_arr = data_tsne.to_numpy()
 np.savetxt('song_data_tsne.txt',data_arr)
 #fig = plt.figure()

@@ -3,6 +3,7 @@ import os
 
 dfs = []
 for root,dirs,file in os.walk('./temp'):
+#Merges the output files from threading process into one file
     for name in file:
         dfs.append(pd.read_csv(os.path.join(root,name)))
 
