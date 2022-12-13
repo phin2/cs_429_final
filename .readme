@@ -1,3 +1,5 @@
+Creates a vector from the frequency of chord appearances in a song and reduces to two dimensions
+
 Preprocessing Order:
   - threading_preprocessing.py
   - merge.py

@@ -95,8 +95,8 @@ for NUM_CENTROIDS in NUM_CENTROIDS_ARR:
     #plots centroids
     plt.scatter(X,Y,c = assignments)
     plt.scatter(c_x,c_y,c='r',marker = 'x')
+    os.remove('./results.txt')
     for i in range(0,NUM_CENTROIDS):
-        os.remove('./results.txt')
         file = open("results.txt",'a')
         file.write('\n')
         file.write("-------------------------------------------------")
